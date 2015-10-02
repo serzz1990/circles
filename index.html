@@ -23,24 +23,26 @@
 
     var Circles = '';
 
-    var svg = document.createElementSvgCircles( Circles );
+    var svg = document.createElementSvgCircles();
 
     document.querySelector('#c').appendChild(svg);
 
+  console.log('d',
+          svg.add({
+              radius: 30,
+              width: 15,
+              percent: 100,
+              color:'#ccc',
+              name : 'bg'
+          })
+  )
 
     svg.add([
                 {
-                    radius: 30,
-                    width: 15,
-                    percent: 100,
-                    color:'#ccc',
-                    name : 'bg'
-                },
-                {
                     start: 0,
-                    radius: 28,
-                    width: 11,
                     percent: 0,
+                    width: 100,
+                    radius: 0,
                     color: '#4DAAFF',
                     name : 'percent'
                 },
@@ -58,7 +60,7 @@
     var percent = svg.get('percent');
     var percent2 = svg.get('percent2');
 
-    console.log('circles', percent );
+    console.log('circles', percent.params );
 
     percent2.update({start: 0}, 5000);
 

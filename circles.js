@@ -422,12 +422,13 @@
 	_private.validation = {
 
 		radius : function(r,w){
-			if( !r || r < 0.1 || r > 50 ) return 50;
+			if( !r ) return 0;
+			if( r > 50 ) return 50;
 			if( w > r ) return w;
 			return r;
 		},
 		width : function(w){
-			if( !w || w < 0.1 ) return 0.1;
+			if( !w && w !== 0 ) return 0.1;
 			if( w > 50 ) return 50;
 			return w;
 		},
