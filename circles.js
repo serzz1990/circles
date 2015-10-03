@@ -11,7 +11,7 @@
 
 
 	var _private = {};
-		_private.methods = {};
+	_private.methods = {};
 
 
 	/**
@@ -115,7 +115,6 @@
 	 */
 	function Circle( svg, option, collection) {
 
-		this.params = {};
 		this.svg  = svg;
 		this.id   = _private.getUnicId();
 		this.path = _private.createSvgElement('path');
@@ -123,7 +122,6 @@
 		if(collection) this.collection = collection;
 		if(option.name) this.name = option.name;
 
-		option.name = false;
 
 		this.params = _private.validateParams(option);
 		this.path.setAttribute('id', this.id);
@@ -139,8 +137,8 @@
 	Circle.prototype.update = function(){
 
 		var duration,
-			params = {},
-			cb;
+		params = {},
+		cb;
 
 
 		if( typeof arguments[0] === 'string' ){
@@ -265,12 +263,39 @@
 	};
 
 
+	_private.methods.circle.animation.getStep = function(from, to, delta, last){
+		if(!from && from != 0) from = 0;
+		if(!to && to != 0) to = 0;
+
+		return (to-from) * delta / last;
+	};
+
+
+	_private.methods.circle.animation.color = function(from, to, deltaTime, lastTime){
+
+		var fromRgb = _private.colors.parseRgb(from);
+		var toRgb = _private.colors.parseRgb(to);
+
+		for( var c = 3; c--; ){
+
+			fromRgb[c] = parseInt(fromRgb[c]) + Math.round(  _private.methods.circle.animation.getStep( fromRgb[c], toRgb[c], deltaTime, lastTime)  );
+
+		}
+
+		return 'rgba('+fromRgb+')';
+
+	};
+
+
 	_private.methods.circle.animation.loop = function(timestamp){
 
 		if(!this.animation.startTime) this.animation.startTime = timestamp;
 
-		var progress = timestamp - this.animation.startTime;
+		var to,from;
+		var color;
+		var progress  = timestamp - this.animation.startTime;
 		var deltaTime = progress - this.animation.lastTime;
+		var lastTime  = this.animation.duration - progress;
 
 		if( this.animation.duration <= progress ){
 			this.animation.callback && this.animation.callback.call(this, this);
@@ -283,19 +308,24 @@
 
 
 		//update params
-		var step,to,from;
-
 		for(var param in this.animation.params){
 
-			from = this.params[param] = this.params[param]|| 0;
+			from = this.params[param];
 			to   = this.animation.params[param];
-			if(typeof to !== 'number') continue;
 
-			step = ((to-from) * deltaTime) / (this.animation.duration - progress);
+			if( param === 'color' ){
 
-			this.params[param] += step;
+				this.params[param] = _private.methods.circle.animation.color(from, to, deltaTime, lastTime);
+				continue
+
+			}else if(typeof to !== 'number') continue;
+
+
+			this.params[param] += _private.methods.circle.animation.getStep(from, to, deltaTime, lastTime);
 
 		}
+
+
 
 
 		_private.methods.circle.set.params(this.path, this.params);
@@ -370,7 +400,7 @@
 
 	_private.addClass = function(el, className){
 
-		if( !el || !className ) return;
+		if( !className ) return;
 		if (el.classList) el.classList.add(className);
 		else el.className += ' ' + className;
 
@@ -387,7 +417,7 @@
 		svg.setAttribute('width','100%');
 		svg.setAttribute('height','100%');
 
-		return svg
+		return svg;
 
 	};
 
@@ -455,12 +485,68 @@
 		res.width   = _private.validation.width( params.width );
 		res.radius  = _private.validation.radius( params.radius, res.width );
 		res.percent = _private.validation.percent( params.percent, res.start || res.floatStart );
-		res.color   =  params.color || _private.methods.circle.get.randomColor();
-		res.opacity =  params.opacity || 1;
+		res.color   = _private.colors.parse(params.color) || _private.methods.circle.get.randomColor();
+		res.opacity = params.opacity || 1;
 
 		return res;
 
 	};
+
+	_private.colors = {};
+
+
+	_private.colors.random = function(){
+
+		return 'rgba('+[Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)]+',1)';
+
+	};
+
+
+	_private.colors.parse = function(color){
+
+		if(_private.colors.isHex(color)){
+			color = _private.colors.hexToRgb(color);
+		}
+		return color;
+	};
+
+
+	_private.colors.isRgb = function(color){
+		return /^rgba?\((\d{1,3}\.?,?)+\)$/i.test(color);
+	};
+
+
+	_private.colors.isHex = function(color){
+		return /^#\S{3,6}$/i.test(color);
+	};
+
+
+	_private.colors.hexToRgb = function(hex) {
+
+		var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+		hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+			return r + r + g + g + b + b;
+		});
+
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
+		return result ? 'rgba('+[
+			parseInt(result[1], 16),
+			parseInt(result[2], 16),
+			parseInt(result[3], 16)
+		] + ',1)' : _private.colors.random();
+
+	};
+
+
+	_private.colors.parseRgb = function(color){
+
+		return color.match(/(\d{1,3}\.?,?)+/i)[0].split(',');
+
+	};
+
+
+
 
 	var pageStartTimestamp = Date.now();
 	var requestAnimationFrame = window.requestAnimationFrame       ||
