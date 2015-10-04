@@ -20,12 +20,14 @@
 	function ElementSvgCircles( circles ){
 
 		this.SVG = _private.createSvg();
+		this.SVG.__data = this;
 		this.circles = [];
+
 
 		_private.methods.global.add.call( this, circles );
 
-		this.SVG.constructor.prototype.get = _private.methods.global.get.bind(this);
-		this.SVG.constructor.prototype.add = _private.methods.global.add.bind(this);
+		this.SVG.get = _private.methods.global.get.bind(this.SVG.__data);
+		this.SVG.add = _private.methods.global.add.bind(this.SVG.__data);
 
 		return this.SVG;
 
@@ -88,7 +90,7 @@
 		if( typeof find === 'string' ){
 			//поиск по имени
 			for(var i = this.circles.length; i--;){
-				if(this.circles[i].name == find) return this.circles[i];
+				if( this.circles[i] && this.circles[i].name == find) return this.circles[i];
 			}
 			return null;
 		}
@@ -118,6 +120,9 @@
 		this.svg  = svg;
 		this.id   = _private.getUnicId();
 		this.path = _private.createSvgElement('path');
+		this.animation = {
+			queue : []
+		};
 
 		if(collection) this.collection = collection;
 		if(option.name) this.name = option.name;
@@ -136,9 +141,17 @@
 
 	Circle.prototype.update = function(){
 
-		var duration,
-		params = {},
-		cb;
+		var animation = {
+			circle : this,
+			options: {
+				delay : (this.animation.delay || 0),
+				queue : true
+			},
+			params : {}
+		};
+
+
+		this.animation.delay = 0; // Clear delay;
 
 
 		if( typeof arguments[0] === 'string' ){
@@ -146,31 +159,47 @@
 			if( !arguments[1] && arguments[1] !== 0 ){
 				return _private.error('Update > no val');
 			}
-			params[arguments[0]] = arguments[1];
-			duration = arguments[2];
-			cb = arguments[3];
+
+			animation.params[arguments[0]] = arguments[1];
+			animation.options.duration = arguments[2];
+			animation.options.callback = arguments[3];
 
 		}else if( typeof arguments[0] === 'object' ){
 
-			params = arguments[0];
-			duration = arguments[1];
-			cb = arguments[2];
+			animation.params = arguments[0];
+			animation.options.duration = arguments[1];
+			animation.options.callback = arguments[2];
 
 		}
 
-		if(!duration){
 
-			this.params = _private.validateParams( deepExtend(this.params,params) );
-			_private.methods.circle.set.params(this.path, this.params);
-			cb && cb.call(this, this);
+		if(!animation.options.duration){
 
+			animation.circle.params = _private.validateParams( deepExtend( animation.circle.params, animation.params) );
+			_private.methods.circle.set.params( animation.circle.path, animation.circle.params);
+			animation.options.callback && animation.options.callback.call( animation.circle, animation.circle );
+
+			return this;
+		}
+
+		if(!animation.options.queue){
+			_private.methods.circle.animation.start(animation);
 		}else{
-			_private.methods.circle.set.animation(this, params, duration, cb);
-			_private.methods.circle.animation.start(this);
+			_private.methods.circle.animation.add(animation);
 		}
+
 
 		return this;
 
+	};
+
+
+	Circle.prototype.delay = function(time){
+
+		this.animation = this.animation || {};
+		this.animation.delay = (parseInt(time) || 0);
+
+		return this;
 	};
 
 
@@ -213,17 +242,6 @@
 	};
 
 
-	_private.methods.circle.set.animation = function(circle, params, duration, cb){
-
-		circle.animation = circle.animation || {};
-
-		circle.animation.duration = duration;
-		circle.animation.callback = cb || false;
-		circle.animation.params   =  _private.validateParams(deepExtend({},circle.params,params));
-
-	};
-
-
 	_private.methods.circle.generateD = function( params ){
 
 		var CENTER = 50;
@@ -253,12 +271,43 @@
 	_private.methods.circle.animation = {};
 
 
-	_private.methods.circle.animation.start = function(circle){
+	_private.methods.circle.animation.add = function( animation ){
 
-		circle.animation.startTime = 0;
-		circle.animation.lastTime = 0;
+		animation.circle.animation.queue.push(animation);
 
-		requestAnimationFrame(_private.methods.circle.animation.loop.bind(circle));
+		_private.methods.circle.animation.next(animation.circle);
+
+	};
+
+
+	_private.methods.circle.animation.next = function( circle ){
+
+		if( !circle.animation.__active ){
+
+			var animation = circle.animation.queue.shift();
+			if(animation) _private.methods.circle.animation.start(animation);
+
+		}
+
+	};
+
+
+	_private.methods.circle.animation.start = function( animation ){
+
+		if( animation.options.queue ){
+			animation.circle.animation.__active = true;
+		}
+
+		setTimeout(function(){
+
+			animation.__startTime = 0;
+			animation.__lastTime = 0;
+
+			animation.params = _private.validateParams(deepExtend({}, animation.circle.params, animation.params));
+			requestAnimationFrame(_private.methods.circle.animation.loop.bind(animation));
+
+		}, animation.options.delay);
+
 
 	};
 
@@ -287,48 +336,66 @@
 	};
 
 
+	_private.methods.circle.animation.complete = function(animation){
+
+		_private.methods.circle.set.params(animation.circle.path, animation.params);
+
+		if( animation.options.queue ){
+
+			animation.circle.animation.__active = false;
+			_private.methods.circle.animation.next(animation.circle);
+
+		}
+
+		animation.options.callback && animation.options.callback.call(animation.circle, animation.circle);
+
+
+	};
+
+
 	_private.methods.circle.animation.loop = function(timestamp){
 
-		if(!this.animation.startTime) this.animation.startTime = timestamp;
+
+		if(!this.__startTime) this.__startTime = timestamp;
 
 		var to,from;
-		var color;
-		var progress  = timestamp - this.animation.startTime;
-		var deltaTime = progress - this.animation.lastTime;
-		var lastTime  = this.animation.duration - progress;
+		var progress  = timestamp - this.__startTime;
+		var deltaTime = progress - this.__lastTime;
+		var lastTime  = this.options.duration - progress;
 
-		if( this.animation.duration <= progress ){
-			this.animation.callback && this.animation.callback.call(this, this);
-			return _private.methods.circle.set.params(this.path, this.animation.params);
+		if( this.options.duration <= progress ){
+
+			return _private.methods.circle.animation.complete(this);
+
 		}
 
 
-
-		this.animation.lastTime = progress;
+		this.__lastTime = progress;
 
 
 		//update params
-		for(var param in this.animation.params){
+		for(var param in this.params){
 
-			from = this.params[param];
-			to   = this.animation.params[param];
+			from = this.circle.params[param];
+			to   = this.params[param];
+
+			if( from === to ) continue;
 
 			if( param === 'color' ){
 
-				this.params[param] = _private.methods.circle.animation.color(from, to, deltaTime, lastTime);
+				this.circle.params[param] = _private.methods.circle.animation.color(from, to, deltaTime, lastTime);
 				continue
 
 			}else if(typeof to !== 'number') continue;
 
 
-			this.params[param] += _private.methods.circle.animation.getStep(from, to, deltaTime, lastTime);
+			this.circle.params[param] += _private.methods.circle.animation.getStep(from, to, deltaTime, lastTime);
 
 		}
 
 
 
-
-		_private.methods.circle.set.params(this.path, this.params);
+		_private.methods.circle.set.params(this.circle.path, this.circle.params);
 
 		requestAnimationFrame(_private.methods.circle.animation.loop.bind(this));
 
@@ -467,7 +534,8 @@
 		},
 		finish : function(p,s){
 			s = s || 0;
-			p = s + p;
+			//todo для коллекции
+			//p = s + p;
 			return ( !p && p !== 0 || p > 100 )? 100: p;
 		},
 		percent: function(p,s){
@@ -587,6 +655,35 @@
 
 		return out;
 	};
+
+
+	if (!Function.prototype.bind) {
+		Function.prototype.bind = function(oThis) {
+			if (typeof this !== 'function') {
+				// closest thing possible to the ECMAScript 5
+				// internal IsCallable function
+				throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+			}
+
+			var aArgs   = Array.prototype.slice.call(arguments, 1),
+				fToBind = this,
+				fNOP    = function() {},
+				fBound  = function() {
+					return fToBind.apply(this instanceof fNOP
+							? this
+							: oThis,
+						aArgs.concat(Array.prototype.slice.call(arguments)));
+				};
+
+			if (this.prototype) {
+				// native functions don't have a prototype
+				fNOP.prototype = this.prototype;
+			}
+			fBound.prototype = new fNOP();
+
+			return fBound;
+		};
+	}
 
 
 })();
