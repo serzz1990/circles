@@ -80,7 +80,7 @@ Circle.update(String param, String value [,duration ,callback]);
 Возвращает экземпляр круга.
 
 ```js
-chart.delay(Number)
+Circle.delay(Number)
 ```
 
 Устанавливает задержку запуска анимации.
