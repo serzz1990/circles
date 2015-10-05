@@ -107,6 +107,21 @@
 
 
 
+	//function AnimationCircle(){};
+	//AnimationCircle.DEFAULT = {
+	//	options: {
+	//		delay : 0,
+	//		queue : true,
+	//		duration: 0
+	//	},
+	//	params : {}
+	//};
+	//AnimationCircle.prototype.loop = function(){};
+	//AnimationCircle.prototype.start = function(){};
+	//AnimationCircle.prototype.finish = function(){};
+	//AnimationCircle.prototype.__getStep = function(){};
+	//AnimationCircle.prototype.__aniColor = function(){};
+
 
 
 
@@ -128,7 +143,11 @@
 		if(option.name) this.name = option.name;
 
 
-		this.params = _private.validateParams(option);
+		if( !option.start || option.start != 0 ) option.floatStart = _private.validation.start( option.floatStart );
+
+
+		this.params = _private.methods.circle.extendParams(option);
+
 		this.path.setAttribute('id', this.id);
 		_private.addClass(this.path, this.name);
 		_private.methods.circle.set.params(this.path, this.params);
@@ -138,6 +157,7 @@
 		return this;
 
 	}
+
 
 	Circle.prototype.update = function(){
 
@@ -303,7 +323,7 @@
 			animation.__startTime = 0;
 			animation.__lastTime = 0;
 
-			animation.params = _private.validateParams(deepExtend({}, animation.circle.params, animation.params));
+			animation.params = _private.methods.circle.validation( animation.params );
 			requestAnimationFrame(_private.methods.circle.animation.loop.bind(animation));
 
 		}, animation.options.delay);
@@ -338,7 +358,7 @@
 
 	_private.methods.circle.animation.complete = function(animation){
 
-		_private.methods.circle.set.params(animation.circle.path, animation.params);
+		_private.methods.circle.set.params(animation.circle.path, deepExtend(animation.circle.params, animation.params));
 
 		if( animation.options.queue ){
 
@@ -348,7 +368,6 @@
 		}
 
 		animation.options.callback && animation.options.callback.call(animation.circle, animation.circle);
-
 
 	};
 
@@ -402,6 +421,37 @@
 	};
 
 
+	_private.methods.circle.validation = function(params){
+
+		for(var param in params){
+
+			if(_private.validation[param]){
+				params[param] = _private.validation[param](params[param]);
+			}
+
+		}
+
+		return params;
+
+	};
+
+
+	_private.methods.circle.extendParams = function( params ){
+
+		return _private.methods.circle.validation( deepExtend({}, Circle.DEFAULT, params ) );
+
+	};
+
+
+	Circle.DEFAULT = {
+		width  : 0,
+		radius : 0,
+		percent: 0,
+		opacity: 1,
+		start  : false,
+		color  : false,
+		name   : false
+	};
 
 
 
@@ -540,6 +590,14 @@
 		},
 		percent: function(p,s){
 			return ( !p && p !== 0 || p-s > 100 )? 100: p;
+		},
+		color : function(color){
+			return color ? _private.colors.parse(color) : _private.methods.circle.get.randomColor();
+		},
+		opacity : function(o){
+			if(o>1 || !o && o != 0) return 1;
+			if(o<0) return 0;
+			return o;
 		}
 
 	};
@@ -553,12 +611,13 @@
 		res.width   = _private.validation.width( params.width );
 		res.radius  = _private.validation.radius( params.radius, res.width );
 		res.percent = _private.validation.percent( params.percent, res.start || res.floatStart );
-		res.color   = _private.colors.parse(params.color) || _private.methods.circle.get.randomColor();
-		res.opacity = params.opacity || 1;
+		res.color   = _private.validation.color(params.color);
+		res.opacity = _private.validation.opacity(params.opacity);
 
 		return res;
 
 	};
+
 
 	_private.colors = {};
 
