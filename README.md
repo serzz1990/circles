@@ -72,14 +72,10 @@ chart.get([,String])
 
 ```js
 Circle.update(Object params [,duration ,callback]);
-//Или
+//or
 Circle.update(String param, String value [,duration ,callback]);
 ```
 
-```js
-var circlePercent = chart.get('percent');
-circlePercent.update({percent:96}, 2000, function( circle ){  console.log('circle',this);  });
-```
 Обновляет параметры круга с анимвцией или без.
 Возвращает экземпляр круга.
 
