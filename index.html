@@ -19,6 +19,7 @@
 <div class="circle circle-1"></div>
 <div class="circle circle-2"></div>
 <div class="circle circle-3"></div>
+<div class="circle circle-4"></div>
 
 <script src="circles.js"></script>
 <script>
@@ -35,8 +36,7 @@
             name : 'bg'
         },
         {
-            start: 0,
-            percent: 0,
+            percent: 70,
             radius: 40,
             width: 10,
             color: '#4DAAFF',
@@ -44,9 +44,29 @@
         }
     ]);
 
+    var CHART4 = document.createElementSvgCircles([
+        {
+            radius: 40,
+            width: 10,
+            percent: 100,
+            color:'#efefef',
+            name : 'bg'
+        },
+        {
+            start: 0,
+            rotate: 0,
+            percent: 70,
+            radius: 40,
+            width: 10,
+            color: '#3DE492',
+            name : 'percent'
+        }
+    ]);
+
     document.querySelector('.circle-1').appendChild(CHART1);
     document.querySelector('.circle-2').appendChild(CHART2);
     document.querySelector('.circle-3').appendChild(CHART3);
+    document.querySelector('.circle-4').appendChild(CHART4);
 
 
 
@@ -89,23 +109,31 @@
     ]);
 
 
-    CHART1.get('percent').delay(1000)
-            .update({percent: 50}, 1500)
-            .update({width: 0.1, color: '#FF0000', percent: 100}, 1500);
 
 
-    CHART2.get('val-1').delay(1000).update({percent: 90}, 1500);
-    CHART2.get('val-2').delay(2000).update({percent: 70}, 1500);
-    CHART2.get('val-3').delay(2200).update({percent: 30}, 1500);
+//    CHART1.get('percent').delay(1000)
+//            .update({percent: 50}, 1500)
+//            .update({width: 0.1, color: '#FF0000', percent: 100}, 1500);
+//
+//
+//    CHART2.get('val-1').delay(1000).update({percent: 90}, 1500);
+//    CHART2.get('val-2').delay(2000).update({percent: 70}, 1500);
+//    CHART2.get('val-3').delay(2200).update({percent: 30}, 1500);
+//
+//
+//
+//    CHART3.get('percent').delay(500).update({color: '#00FF8D',percent:100}, 2000)
+//                         .delay(1000).update({color: '#DEDB0F',percent:70, start: 30}, 2000)
+//                         .delay(2000).update({color: '#EF0DBA',percent:100, width: 20, start: 50}, 2000)
+//                         .update({color: '#EF0DBA', width: 20, start: 0}, 1000);
 
 
-
-    CHART3.get('percent').delay(500).update({color: '#00FF8D',percent:100}, 2000)
-                         .delay(1000).update({color: '#DEDB0F',percent:70, start: 30}, 2000)
-                         .delay(2000).update({color: '#EF0DBA',percent:100, width: 20, start: 50}, 2000)
-                         .update({color: '#EF0DBA', width: 20, start: 0}, 1000);
-
-
+    CHART4.get('percent')
+            .delay(500).update({rotate: 905, percent: 90, color: '#DEDB0F'}, 15000)
+            .stop(10000, function(){
+               this.update('percent',10,2000)
+                   .update({rotate:this.params.rotate+300, percent:100, width: 0.5},3000 );
+            });
 
 
 

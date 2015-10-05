@@ -192,7 +192,6 @@
 
 		}
 
-
 		if(!animation.options.duration){
 
 			animation.circle.params = _private.validateParams( deepExtend( animation.circle.params, animation.params) );
@@ -213,6 +212,20 @@
 
 	};
 
+	Circle.prototype.stop = function(time, cb){
+
+		setTimeout(function(){
+
+				this.animation.stop = true;
+				this.animation.stopCallBack = cb;
+
+		}.bind(this),
+			(typeof time == 'number'? time: 0)
+		);
+
+		return this;
+
+	};
 
 	Circle.prototype.delay = function(time){
 
@@ -236,12 +249,13 @@
 	};
 
 
-	_private.methods.circle.get.coordinates = function( percent, C, R ){
+	_private.methods.circle.get.coordinates = function( percent, rotate, C, R ){
 
-		percent = percent || 0; if (percent >= 100) percent = 99.999;
 		var res = {};
 
-		res.angle = 360/100 * percent;
+		percent += rotate;
+
+		res.angle = 359.99/100 * percent;
 		res.alpha = (90 - res.angle) * Math.PI / 180;
 		res.x = C + R * Math.cos(res.alpha);
 		res.y = C - R * Math.sin(res.alpha);
@@ -269,8 +283,8 @@
 
 		var finish = _private.validation.finish( params.percent, start );
 		var R = params.radius - params.width / 2;
-		var PointA = _private.methods.circle.get.coordinates( start, CENTER, R );
-		var PointB = _private.methods.circle.get.coordinates( finish, CENTER, R );
+		var PointA = _private.methods.circle.get.coordinates( start, params.rotate, CENTER, R );
+		var PointB = _private.methods.circle.get.coordinates( finish, params.rotate, CENTER, R );
 
 		var d = [ 'M', PointA.x, PointA.y, 'L', PointA.x, PointA.y,
 			'A', R, R, 0, +(PointB.angle - PointA.angle > 180), 1, PointB.x, PointB.y ];
@@ -372,6 +386,15 @@
 	};
 
 
+	_private.methods.circle.animation.stop = function(animation){
+
+		animation.circle.animation.stop = false;
+		animation.circle.animation.__active = false;
+		animation.circle.animation.queue = [];
+		animation.circle.animation.stopCallBack && animation.circle.animation.stopCallBack.call(animation.circle,animation.circle);
+
+	};
+
 	_private.methods.circle.animation.loop = function(timestamp){
 
 
@@ -382,7 +405,11 @@
 		var deltaTime = progress - this.__lastTime;
 		var lastTime  = this.options.duration - progress;
 
-		if( this.options.duration <= progress ){
+		if( this.circle.animation.stop === true ){
+
+			return _private.methods.circle.animation.stop(this);
+
+		}else if( this.options.duration <= progress ){
 
 			return _private.methods.circle.animation.complete(this);
 
@@ -448,6 +475,7 @@
 		radius : 0,
 		percent: 0,
 		opacity: 1,
+		rotate : 0,
 		start  : false,
 		color  : false,
 		name   : false
@@ -598,6 +626,9 @@
 			if(o>1 || !o && o != 0) return 1;
 			if(o<0) return 0;
 			return o;
+		},
+		rotate : function(r){
+			return typeof r == 'number'? r: 0;
 		}
 
 	};

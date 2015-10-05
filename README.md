@@ -41,13 +41,14 @@ chart.add({
 
 Где
 
-* `start` 		    - Началиная точка круга (default `0`, min `0`, max `100`)
-* `percent` 		- *Обязательно. Конечная точка круга ( min `0`, max `100`)
-* `radius` 		    - Радиус (default `50`, min `0`, max `50`)
-* `width` 		    - Ширина круга (default `0.1`, min `0`, max `50`)
-* `opacity` 		- Прозрачность круга (default `1`, min `0`, max `1`)
-* `color` 		    - Цвет (default : Случайный)
-* `name` 		    - Название круга, а так же className (default : `null`)
+* `start` 		    - `Number` Началиная точка круга (default `0`, min `0`, max `100`)
+* `percent` 		- `Number` *Обязательно. Конечная точка круга ( min `0`, max `100`)
+* `radius` 		    - `Number` Радиус (default `50`, min `0`, max `50`)
+* `width` 		    - `Number` Ширина круга (default `0.1`, min `0`, max `50`)
+* `opacity` 		- `Number` Прозрачность круга (default `1`, min `0`, max `1`)
+* `rotate` 		    - `Number` Процент поворота (default : `0`)
+* `color` 		    - `String` Цвет (default : Случайный)
+* `name` 		    - `String` Название круга, а так же className (default : `null`)
 
 
 
@@ -86,6 +87,13 @@ Circle.delay(Number)
 Устанавливает задержку запуска анимации.
 Возвращает экземпляр круга. 
 
+```js
+Circle.stop(Number time [,callback])
+```
+
+Останавливает анимацию и очищает очередь.
+Возвращает экземпляр круга. 
+
 
 
 ### Licence
@@ -94,6 +102,7 @@ MIT License.
 
 ### Changelog
 
+* 0.3.0    Добавлен параметр rotate и метод остановки анимации.
 * 0.2.0    Добавлена задержка и очередь анимации.
 * 0.1.0    Добавлена анимация цвета1.
 * 0.0.1    Первый релиз.
